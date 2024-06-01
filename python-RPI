@@ -1,0 +1,62 @@
+try:
+    from flask import Flask, request, jsonify
+    import threading
+    import time
+    import matplotlib.pyplot as plt
+    print("Imports successful")
+    
+except ImportError as e:
+    print(f"Error importing modules: {e}")
+    raise
+
+print("Starting Script")
+app = Flask(__name__)
+print("Flask app name set")
+
+data = []
+print("Data array initialized")
+
+@app.route('/data', methods=['POST'])
+def collect_data():
+    print("Data Received")
+    distance1 = request.form.get('distance1')
+    distance = request.form.get('distance')
+    data.append({'distance1': float(distance1), 'distance': float(distance)})
+    return jsonify({'status': 'success', 'data': data})
+
+def run_server():
+    print("Starting Flask Server")
+    try:
+        app.run(host='172.20.10.10', port=5000)
+        print("Flask Server Started")
+    except Exception as e:
+        print(f"Error starting Flask Server: {e}")
+
+def visualize_data():
+    print("Starting data visualization")
+    plt.ion()
+    fig, ax = plt.subplots()
+    while True:
+        if data:
+            distances1 = [d['distance1'] for d in data if d['distance1'] != -1]
+            distances = [d['distance'] for d in data if d['distance'] != -1]
+            ax.clear()
+            ax.plot(distances1, label='Distance1')
+            ax.plot(distances, label='Distance')
+            ax.set_xlabel('Time')
+            ax.set_ylabel('Distance (cm)')
+            ax.legend()
+            plt.draw()
+            plt.pause(2)  # Update every 2 seconds
+        else:
+            print("No data to visualize")
+            time.sleep(2)
+
+if __name__ == '__main__':
+    print("Launching server thread")
+    server_thread = threading.Thread(target=run_server)
+    server_thread.daemon = True
+    server_thread.start()
+    
+    visualize_data()
+
